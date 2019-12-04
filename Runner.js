@@ -563,6 +563,15 @@ var DirectionSolver = function(board){
             currX = bomberman.getX();
             currY = bomberman.getY();
 
+            const isLessThanTwoWallAround = board.countNear(currX, currY, Element.WALL) < 2;
+            const potentialBlastCells = generatePotentialBlastCells(bombermanX, bombermanY);
+            const isEnemyInBlastRange = potentialBlastCells.some(coordinates => board.isAnyOfAt(...coordinates, [
+              Element.OTHER_BOMBERMAN,
+              Element.DESTROYABLE_WALL,
+              Element.MEAT_CHOPPER
+            ]));
+            const shouldPlaceBomb = isLessThanTwoWallAround && isEnemyInBlastRange;
+
             // Calculate new move
             var newMove =  getMove(board);
                // Store previous move if direction changed
@@ -571,9 +580,26 @@ var DirectionSolver = function(board){
                 STATIC_DIRECTION = newMove;
             }
 
-            return `${''}${newMove}`;
+            return shouldPlaceBomb ? [Direction.ACT, newMove] : newMove;
         }
     };
+};
+
+function generatePotentialBlastCells(x, y) {
+  return [
+    [x + 1, y],
+    [x + 2, y],
+    [x + 3, y],
+    [x, y - 1],
+    [x, y - 2],
+    [x, y - 3],
+    [x - 1, y],
+    [x - 2, y],
+    [x - 3, y],
+    [x, y + 1],
+    [x, y + 2],
+    [x, y + 3]
+  ]
 };
 
 function movesAsArray(possibleMoves) {
