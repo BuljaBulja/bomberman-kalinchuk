@@ -538,6 +538,7 @@ var random = function(n) {
 };
 
 var STATIC_DIRECTION;
+var PREVIOUS_STATIC_DIRECTION;
 var bomberman;
 var currX;
 var currY;
@@ -554,8 +555,11 @@ var DirectionSolver = function(board){
 
             // Calculate new move
             var newMove =  getMove(board);
-
-            STATIC_DIRECTION = newMove;
+               // Store previous move if direction changed
+               if (newMove !== STATIC_DIRECTION) {
+                PREVIOUS_STATIC_DIRECTION = STATIC_DIRECTION;
+                STATIC_DIRECTION = newMove;
+            }
 
             return `${''}${newMove}`;
         }
@@ -576,11 +580,20 @@ function mergePossibleMoves(a, b) {
 }
 
 function chooseMoveFromArrayOfPossible(possibleMoves) {
+    var possibleMovesArray = movesAsArray(possibleMoves);
+
     if (STATIC_DIRECTION && possibleMoves[STATIC_DIRECTION]) {
         return STATIC_DIRECTION;
     }
 
-    var possibleMovesArray = movesAsArray(possibleMoves);
+    if (PREVIOUS_STATIC_DIRECTION && possibleMovesArray.length > 1) {
+        possibleMoves = {
+            ...possibleMoves,
+            PREVIOUS_STATIC_DIRECTION: false
+        }
+        possibleMovesArray = movesAsArray(possibleMoves);
+    }
+
 
     return possibleMovesArray[random(possibleMovesArray.length)];
 }
@@ -631,8 +644,8 @@ function getMove(board) {
         return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs);
     }
 
-    if (movesAsArray(moveBarriersAndPredictedAndBombs).length) {
-        return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs);
+    if (movesAsArray(moveBarriersAndPredicted).length) {
+        return chooseMoveFromArrayOfPossible(moveBarriersAndPredicted);
     }
 
     if (movesAsArray(moveBarriers).length) {
