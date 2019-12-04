@@ -58,7 +58,7 @@ var processBoard = function(boardString) {
 
 // you can get this code after registration on the server with your email
 var url =
-  "http://34.65.115.155/codenjoy-contest/board/player/gevfzzazgiela21h61d0?code=7833654518488201118&gameName=bomberman";
+  "http://34.65.115.155/codenjoy-contest/board/player/gevfzzazgiela21h61d0?code=7833654518488201118";
 
 url = url.replace("http", "ws");
 url = url.replace("board/player/", "ws?user=");
@@ -564,6 +564,7 @@ var DirectionSolver = function(board){
             currX = bomberman.getX();
             currY = bomberman.getY();
 
+            const isEmptyFieldNear = board.countNear(currX, currY, Element.NONE) > 0;
             const isLessThanTwoWallAround = board.countNear(currX, currY, Element.WALL) < 2;
             const potentialBlastCells = generatePotentialBlastCells(currX, currY);
             const isEnemyInBlastRange = potentialBlastCells.some(coordinates => board.isAnyOfAt(...coordinates, [
@@ -571,7 +572,7 @@ var DirectionSolver = function(board){
               Element.DESTROYABLE_WALL,
               Element.MEAT_CHOPPER
             ]));
-            const shouldPlaceBomb = isLessThanTwoWallAround && isEnemyInBlastRange;
+            const shouldPlaceBomb = (isLessThanTwoWallAround && isEnemyInBlastRange) || !isEmptyFieldNear;
 
             // Calculate new move
             var newMove =  getMove(board);
