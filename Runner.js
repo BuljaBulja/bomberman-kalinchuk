@@ -553,6 +553,7 @@ var PREVIOUS_STATIC_DIRECTION;
 var bomberman;
 var currX;
 var currY;
+var bombIdle = 0;
 
 var DirectionSolver = function(board){
     return {
@@ -572,7 +573,7 @@ var DirectionSolver = function(board){
               Element.DESTROYABLE_WALL,
               Element.MEAT_CHOPPER
             ]));
-            const shouldPlaceBomb = (isLessThanTwoWallAround && isEnemyInBlastRange) || !isEmptyFieldNear;
+            const shouldPlaceBomb = (isLessThanTwoWallAround && isEnemyInBlastRange) || !isEmptyFieldNear || bombIdle > 5;
 
             // Calculate new move
             var newMove =  getMove(board);
@@ -580,6 +581,12 @@ var DirectionSolver = function(board){
                if (newMove !== STATIC_DIRECTION) {
                 PREVIOUS_STATIC_DIRECTION = STATIC_DIRECTION;
                 STATIC_DIRECTION = newMove;
+            }
+
+            if (shouldPlaceBomb) {
+              bombIdle = 0;
+            } else {
+              bombIdle++;
             }
 
             return shouldPlaceBomb ? [Direction.ACT, newMove] : newMove;
