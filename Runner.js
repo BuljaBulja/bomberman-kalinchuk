@@ -481,12 +481,13 @@ var Board = function(board) {
     return result;
   };
 
-  var getClosestBomberman = function(ownBomberman) {
+  var getClosestBomberman = function() {
+    var ownBomberman = getBomberman();
     var x = ownBomberman.getX();
     var y = ownBomberman.getY();
     var aliveBombermans = findOtherBomberman();
   
-    aliveBombermans.reduce(
+    return aliveBombermans.reduce(
       (result, current) => {
         differenceX = current.getX() - x;
         differenceY = current.getX() - y;
@@ -585,13 +586,12 @@ function mergePossibleMoves(a, b) {
     }
 }
 
-function chooseMoveFromArrayOfPossible(possibleMoves) {
+function chooseMoveFromArrayOfPossible(possibleMoves, priorityDirections) {
     if (STATIC_DIRECTION && possibleMoves[STATIC_DIRECTION]) {
         return STATIC_DIRECTION;
     }
-
-    var possibleMovesArray = movesAsArray(possibleMoves);
-
+    var moveToBombarman = priorityDirections.filter((item) => possibleMoves[item]);
+    var possibleMovesArray = moveToBombarman.length > 0 ? moveToBombarman : movesAsArray(possibleMoves);
     return possibleMovesArray[random(possibleMovesArray.length)];
 }
 
@@ -637,16 +637,18 @@ function getMove(board) {
     var moveBarriersAndPredicted = mergePossibleMoves(moveBarriers, movePredicted);
     var moveBarriersAndPredictedAndBombs = mergePossibleMoves(moveBarriersAndPredicted, moveBombs);
 
+    var closestBomberman = board.getClosestBomberman();
+    console.log(closestBomberman)
     if (movesAsArray(moveBarriersAndPredictedAndBombs).length) {
-        return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs);
+        return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs, closestBomberman.directions);
     }
 
     if (movesAsArray(moveBarriersAndPredictedAndBombs).length) {
-        return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs);
+        return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs, closestBomberman.directions);
     }
 
     if (movesAsArray(moveBarriers).length) {
-        return chooseMoveFromArrayOfPossible(moveBarriers);
+        return chooseMoveFromArrayOfPossible(moveBarriers, closestBomberman.directions);
     }
 
     return '';
