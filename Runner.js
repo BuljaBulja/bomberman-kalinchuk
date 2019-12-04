@@ -485,7 +485,7 @@ var Board = function(board) {
     var x = ownBomberman.getX();
     var y = ownBomberman.getY();
     var aliveBombermans = findOtherBomberman();
-  
+
     aliveBombermans.reduce(
       (result, current) => {
         differenceX = current.getX() - x;
@@ -641,14 +641,63 @@ function getPossibleMovesBasedOnBombs(board) {
     };
 }
 
+function gePossibleMovesBasedOnDanger(board) {
+    var cellsWithMovingParts =  [...board.getMeatChoppers(), ...board.getOtherBombermans()];
+    var danger = {};
+
+    cellsWithMovingParts.forEach(item => {
+        var deltaX = bomberman.getX() - item.getX();
+        var deltaY = bomberman.getY() - item.getY();
+
+        if(deltaY === 0) {
+            if (deltaX > 0 && deltaX <= 2) {
+                danger[Direction.RIGHT] = true;
+            }
+
+            if (deltaX < 0 && deltaX >= -2) {
+                danger[Direction.LEFT] = true;
+            }
+        } else if(deltaX === 0) {
+            if (deltaY > 0 && deltaY <= 2) {
+                danger[Direction.UP] = true;
+            }
+
+            if (deltaY < 0 && deltaY >= -2) {
+                danger[Direction.DOWN] = true;
+            }
+
+        } else if (deltaY === 1 && Math.abs(deltaX) === 1) {
+            danger[Direction.UP] = true;
+        } else if (deltaY === -1 && Math.abs(deltaX) === 1) {
+            danger[Direction.DOWN] = true;
+        } else if (deltaX === 1 && Math.abs(deltaY) === 1) {
+            danger[Direction.RIGHT] = true;
+        } else if (deltaX === -1 && Math.abs(deltaY) === 1) {
+            danger[Direction.LEFT] = true;
+        }
+    })
+
+    return {
+        [Direction.DOWN]: !danger[Direction.DOWN],
+        [Direction.UP]: !danger[Direction.UP],
+        [Direction.LEFT]: !danger[Direction.LEFT],
+        [Direction.RIGHT]: !danger[Direction.RIGHT],
+    };
+}
 
 function getMove(board) {
     var moveBarriers = getPossibleMovesBasedOnBarriers(board);
     var movePredicted = getPossibleMovesBasedOnBarriersPredicted(board);
     var moveBombs = getPossibleMovesBasedOnBombs(board);
+    var moveDanger = gePossibleMovesBasedOnDanger(board);
 
     var moveBarriersAndPredicted = mergePossibleMoves(moveBarriers, movePredicted);
     var moveBarriersAndPredictedAndBombs = mergePossibleMoves(moveBarriersAndPredicted, moveBombs);
+    var moveBarriersAndPredictedAndBombsAndDanger = mergePossibleMoves(moveBarriersAndPredictedAndBombs, moveDanger);
+
+    if (movesAsArray(moveBarriersAndPredictedAndBombsAndDanger).length) {
+        return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombsAndDanger);
+    }
 
     if (movesAsArray(moveBarriersAndPredictedAndBombs).length) {
         return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs);
