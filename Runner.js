@@ -461,6 +461,19 @@ var Board = function(board) {
     return count;
   };
 
+  var findOtherBomberman = function() {
+    var result = [];
+    for (var i = 0; i < size*size; i++) {
+        var point = xyl.getXY(i);
+        var pointX = point.getX();
+        var pointY = point.getY();
+        if (isAt(pointX, pointY, Element.OTHER_BOMBERMAN) || isAt(pointX, pointY, Element.OTHER_BOMB_BOMBERMAN)) {
+          result.push(point);
+        }
+    }
+    return result;
+  }
+
   var getAliveBombermans = function() {
     var result = [];
     result = result.concat(findAll(Element.OTHER_BOMBERMAN));
@@ -471,7 +484,7 @@ var Board = function(board) {
   var getClosestBomberman = function(ownBomberman) {
     var x = ownBomberman.getX();
     var y = ownBomberman.getY();
-    var aliveBombermans = getAliveBombermans();
+    var aliveBombermans = findOtherBomberman();
     aliveBombermans.reduce(
       (result, current) => {
         differenceX = current.getX() - x;
