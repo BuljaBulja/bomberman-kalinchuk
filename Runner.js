@@ -515,6 +515,7 @@ var Board = function(board) {
     isBarrierAt: isBarrierAt,
     countNear: countNear,
     getAliveBombermans: getAliveBombermans,
+    getClosestBomberman: getClosestBomberman,
     getAt: getAt
   };
 };
