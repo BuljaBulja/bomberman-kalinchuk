@@ -651,7 +651,7 @@ function getPossibleMovesBasedOnBarriersPredicted(board) {
 }
 
 function getPossibleMovesBasedOnBombs(board) {
-    var bombsWithBlasts = [...board.getFutureBlasts(), ...board.getBombs(), ...board.getBlasts()];
+    var bombsWithBlasts = board.getFutureBlasts();
 
     var getIsBlast = (xDelta, yDelta) => {
         return bombsWithBlasts.indexOf(blast => bomberman.getX() + xDelta === blast.getX() &&  bomberman.getY() + yDelta === blast.getY()) !== -1;
