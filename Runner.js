@@ -564,7 +564,7 @@ var DirectionSolver = function(board){
             currY = bomberman.getY();
 
             const isLessThanTwoWallAround = board.countNear(currX, currY, Element.WALL) < 2;
-            const potentialBlastCells = generatePotentialBlastCells(bombermanX, bombermanY);
+            const potentialBlastCells = generatePotentialBlastCells(currX, currY);
             const isEnemyInBlastRange = potentialBlastCells.some(coordinates => board.isAnyOfAt(...coordinates, [
               Element.OTHER_BOMBERMAN,
               Element.DESTROYABLE_WALL,
