@@ -485,24 +485,34 @@ var Board = function(board) {
     var x = ownBomberman.getX();
     var y = ownBomberman.getY();
     var aliveBombermans = findOtherBomberman();
+  
     aliveBombermans.reduce(
       (result, current) => {
         differenceX = current.getX() - x;
         differenceY = current.getX() - y;
+        var postions = [];
         var distance = Math.abs(differenceX) + Math.abs(differenceY);
+        if (differenceX !== 0) {
+          postions.push(differenceX > 0 ? Direction.RIGHT : Direction.LEFT)
+        }
+        if (differenceY !== 0) {
+          postions.push(differenceY > 0 ? Direction.UP : Direction.DOWN)
+        }
 
         return distance < result.distance
           ? {
               distance: distance,
               bomberman: current,
               diffX: differenceX,
-              diffY: differenceY
+              diffY: differenceY,
+              directions: postions
             }
           : result;
       },
       {
         distance: Infinity,
-        bomberman: null
+        bomberman: null,
+        directions: []
       }
     );
   };
