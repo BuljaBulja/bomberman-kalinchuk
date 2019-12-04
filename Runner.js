@@ -486,7 +486,7 @@ var Board = function(board) {
     var x = ownBomberman.getX();
     var y = ownBomberman.getY();
     var aliveBombermans = findOtherBomberman();
-  
+
     return aliveBombermans.reduce(
       (result, current) => {
         differenceX = current.getX() - x;
@@ -549,6 +549,7 @@ var random = function(n) {
 };
 
 var STATIC_DIRECTION;
+var PREVIOUS_STATIC_DIRECTION;
 var bomberman;
 var currX;
 var currY;
@@ -563,14 +564,43 @@ var DirectionSolver = function(board){
             currX = bomberman.getX();
             currY = bomberman.getY();
 
+            const isLessThanTwoWallAround = board.countNear(currX, currY, Element.WALL) < 2;
+            const potentialBlastCells = generatePotentialBlastCells(bombermanX, bombermanY);
+            const isEnemyInBlastRange = potentialBlastCells.some(coordinates => board.isAnyOfAt(...coordinates, [
+              Element.OTHER_BOMBERMAN,
+              Element.DESTROYABLE_WALL,
+              Element.MEAT_CHOPPER
+            ]));
+            const shouldPlaceBomb = isLessThanTwoWallAround && isEnemyInBlastRange;
+
             // Calculate new move
             var newMove =  getMove(board);
+               // Store previous move if direction changed
+               if (newMove !== STATIC_DIRECTION) {
+                PREVIOUS_STATIC_DIRECTION = STATIC_DIRECTION;
+                STATIC_DIRECTION = newMove;
+            }
 
-            STATIC_DIRECTION = newMove;
-
-            return `${''}${newMove}`;
+            return shouldPlaceBomb ? [Direction.ACT, newMove] : newMove;
         }
     };
+};
+
+function generatePotentialBlastCells(x, y) {
+  return [
+    [x + 1, y],
+    [x + 2, y],
+    [x + 3, y],
+    [x, y - 1],
+    [x, y - 2],
+    [x, y - 3],
+    [x - 1, y],
+    [x - 2, y],
+    [x - 3, y],
+    [x, y + 1],
+    [x, y + 2],
+    [x, y + 3]
+  ]
 };
 
 function movesAsArray(possibleMoves) {
@@ -586,12 +616,19 @@ function mergePossibleMoves(a, b) {
     }
 }
 
+
 function chooseMoveFromArrayOfPossible(possibleMoves, priorityDirections) {
-    if (STATIC_DIRECTION && possibleMoves[STATIC_DIRECTION]) {
-        return STATIC_DIRECTION;
-    }
     var moveToBombarman = priorityDirections.filter((item) => possibleMoves[item]);
     var possibleMovesArray = moveToBombarman.length > 0 ? moveToBombarman : movesAsArray(possibleMoves);
+
+    if (STATIC_DIRECTION && possibleMovesArray.indexOf(STATIC_DIRECTION) !== -1) {
+        return STATIC_DIRECTION;
+    }
+
+    if (PREVIOUS_STATIC_DIRECTION && possibleMovesArray.length > 1) {
+        possibleMovesArray = possibleMovesArray.filter((item) => item !== PREVIOUS_STATIC_DIRECTION)
+    }
+
     return possibleMovesArray[random(possibleMovesArray.length)];
 }
 
@@ -628,23 +665,72 @@ function getPossibleMovesBasedOnBombs(board) {
     };
 }
 
+function gePossibleMovesBasedOnDanger(board) {
+    var cellsWithMovingParts =  [...board.getMeatChoppers(), ...board.getOtherBombermans()];
+    var danger = {};
+
+    cellsWithMovingParts.forEach(item => {
+        var deltaX = bomberman.getX() - item.getX();
+        var deltaY = bomberman.getY() - item.getY();
+
+        if(deltaY === 0) {
+            if (deltaX > 0 && deltaX <= 2) {
+                danger[Direction.RIGHT] = true;
+            }
+
+            if (deltaX < 0 && deltaX >= -2) {
+                danger[Direction.LEFT] = true;
+            }
+        } else if(deltaX === 0) {
+            if (deltaY > 0 && deltaY <= 2) {
+                danger[Direction.UP] = true;
+            }
+
+            if (deltaY < 0 && deltaY >= -2) {
+                danger[Direction.DOWN] = true;
+            }
+
+        } else if (deltaY === 1 && Math.abs(deltaX) === 1) {
+            danger[Direction.UP] = true;
+        } else if (deltaY === -1 && Math.abs(deltaX) === 1) {
+            danger[Direction.DOWN] = true;
+        } else if (deltaX === 1 && Math.abs(deltaY) === 1) {
+            danger[Direction.RIGHT] = true;
+        } else if (deltaX === -1 && Math.abs(deltaY) === 1) {
+            danger[Direction.LEFT] = true;
+        }
+    })
+
+    return {
+        [Direction.DOWN]: !danger[Direction.DOWN],
+        [Direction.UP]: !danger[Direction.UP],
+        [Direction.LEFT]: !danger[Direction.LEFT],
+        [Direction.RIGHT]: !danger[Direction.RIGHT],
+    };
+}
 
 function getMove(board) {
     var moveBarriers = getPossibleMovesBasedOnBarriers(board);
     var movePredicted = getPossibleMovesBasedOnBarriersPredicted(board);
     var moveBombs = getPossibleMovesBasedOnBombs(board);
+    var moveDanger = gePossibleMovesBasedOnDanger(board);
 
     var moveBarriersAndPredicted = mergePossibleMoves(moveBarriers, movePredicted);
     var moveBarriersAndPredictedAndBombs = mergePossibleMoves(moveBarriersAndPredicted, moveBombs);
+    var moveBarriersAndPredictedAndBombsAndDanger = mergePossibleMoves(moveBarriersAndPredictedAndBombs, moveDanger);
 
     var closestBomberman = board.getClosestBomberman();
-    console.log(closestBomberman)
+
     if (movesAsArray(moveBarriersAndPredictedAndBombs).length) {
         return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs, closestBomberman.directions);
     }
 
     if (movesAsArray(moveBarriersAndPredictedAndBombs).length) {
         return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs, closestBomberman.directions);
+    }
+
+    if (movesAsArray(moveBarriersAndPredicted).length) {
+        return chooseMoveFromArrayOfPossible(moveBarriersAndPredicted, closestBomberman.directions);
     }
 
     if (movesAsArray(moveBarriers).length) {
