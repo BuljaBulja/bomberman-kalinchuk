@@ -721,8 +721,8 @@ function getMove(board) {
 
     var closestBomberman = board.getClosestBomberman();
 
-    if (movesAsArray(moveBarriersAndPredictedAndBombs).length) {
-        return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs, closestBomberman.directions);
+    if (movesAsArray(moveBarriersAndPredictedAndBombsAndDanger).length) {
+        return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombsAndDanger, closestBomberman.directions);
     }
 
     if (movesAsArray(moveBarriersAndPredictedAndBombs).length) {
