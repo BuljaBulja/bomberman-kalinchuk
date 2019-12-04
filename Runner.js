@@ -58,7 +58,7 @@ var processBoard = function(boardString) {
 };
 
 // you can get this code after registration on the server with your email
-var url = "http://34.65.115.155/codenjoy-contest/board/player/gevfzzazgiela21h61d0?code=7833654518488201118&gameName=bomberman";
+var url = "http://34.65.115.155/codenjoy-contest/board/player/wklx6zx6h6xi6h19neba?code=8370028840130601534&gameName=bomberman";
 
 url = url.replace("http", "ws");
 url = url.replace("board/player/", "ws?user=");
@@ -474,52 +474,107 @@ var random = function(n){
     return Math.floor(Math.random()*n);
 };
 
-let directions = ['RIGHT', 'DOWN', 'LEFT', 'UP'];
+var STATIC_DIRECTION;
+var bomberman;
+var currX;
+var currY;
 
 var DirectionSolver = function(board){
-    const isBarrierFor = (currX, currY, direction) => {
-      const map = {
-        RIGHT: !(board.isAt(currX + 1, currY, Element.NONE) && board.isAt(currX + 2, currY, Element.NONE)),
-        DOWN: !(board.isAt(currX, currY - 1, Element.NONE) && board.isAt(currX, currY - 2, Element.NONE)),
-        LEFT: !(board.isAt(currX - 1, currY, Element.NONE) && board.isAt(currX - 2, currY, Element.NONE)),
-        UP: !(board.isAt(currX, currY + 1, Element.NONE) && board.isAt(currX, currY + 2, Element.NONE))
-      };
-      return map[direction];
-    };
-
     return {
         /**
          * @return next hero action
          */
         get : function() {
-            let action = Direction[directions[0]];
-            const bomberman = board.getBomberman();
-            const bombermanX = bomberman.getX();
-            const bombermanY = bomberman.getY();
-            const isMoreThanOneWallAround = board.countNear(bombermanX, bombermanY, Element.WALL) > 1;
-            const isBarrier  = {
-              RIGHT: isBarrierFor(bombermanX, bombermanY, 'RIGHT') && isBarrierFor(bombermanX + 1, bombermanY, 'DOWN'),
-              DOWN: isBarrierFor(bombermanX, bombermanY, 'DOWN') && isBarrierFor(bombermanX, bombermanY - 1, 'LEFT'),
-              LEFT: isBarrierFor(bombermanX, bombermanY, 'LEFT') && isBarrierFor(bombermanX - 1, bombermanY, 'UP'),
-              UP: isBarrierFor(bombermanX, bombermanY, 'UP') && isBarrierFor(bombermanX, bombermanY + 1, 'RIGHT')
-            };
+            bomberman = board.getBomberman();
+            currX = bomberman.getX();
+            currY = bomberman.getY();
 
+            // Calculate new move
+            var newMove =  getMove(board);
 
-            if (isBarrier[directions[0]]) {
-              directions.push(directions.shift());
-            }
-            if (isBarrier[directions[0]]) {
-              directions.push(directions.shift());
-            }
-            if (isBarrier[directions[0]]) {
-              directions.push(directions.shift());
-            }
-            if (isBarrier[directions[0]]) {
-              directions.push(directions.shift());
-            }
+            STATIC_DIRECTION = newMove;
 
-            return isMoreThanOneWallAround ? Direction[directions[0]] : [Direction.ACT, Direction[directions[0]]];
+            return `${''}${newMove}`;
         }
     };
 };
 
+function movesAsArray(possibleMoves) {
+    return Object.keys(possibleMoves).filter(x => possibleMoves[x]);
+}
+
+function mergePossibleMoves(a, b) {
+    return {
+        [Direction.DOWN]: a[Direction.DOWN] && b[Direction.DOWN],
+        [Direction.UP]: a[Direction.UP] && b[Direction.UP],
+        [Direction.LEFT]: a[Direction.LEFT] && b[Direction.LEFT],
+        [Direction.RIGHT]: a[Direction.RIGHT] && b[Direction.RIGHT]
+    }
+}
+
+function chooseMoveFromArrayOfPossible(possibleMoves) {
+    if (STATIC_DIRECTION && possibleMoves[STATIC_DIRECTION]) {
+        return STATIC_DIRECTION;
+    }
+
+    var possibleMovesArray = movesAsArray(possibleMoves);
+
+    return possibleMovesArray[random(possibleMovesArray.length)];
+}
+
+function getPossibleMovesBasedOnBarriers(board) {
+    return {
+        [Direction.DOWN]: board.isAt(currX, currY - 1, Element.NONE),
+        [Direction.UP]: board.isAt(currX, currY + 1, Element.NONE),
+        [Direction.LEFT]: board.isAt(currX - 1, currY, Element.NONE),
+        [Direction.RIGHT]: board.isAt(currX + 1, currY, Element.NONE)
+    };
+}
+
+function getPossibleMovesBasedOnBarriersPredicted(board) {
+    return {
+        [Direction.DOWN]: board.isAt(currX, currY - 2, Element.NONE) || board.isAt(currX - 1, currY - 1, Element.NONE) || board.isAt(currX + 1, currY - 1, Element.NONE),
+        [Direction.UP]: board.isAt(currX, currY + 2, Element.NONE) || board.isAt(currX + 1, currY + 1, Element.NONE) || board.isAt(currX - 1, currY + 1, Element.NONE),
+        [Direction.LEFT]: board.isAt(currX - 2, currY, Element.NONE) || board.isAt(currX - 1, currY + 1, Element.NONE) || board.isAt(currX - 1, currY - 1, Element.NONE),
+        [Direction.RIGHT]: board.isAt(currX + 2, currY, Element.NONE) || board.isAt(currX + 1, currY - 1, Element.NONE) || board.isAt(currX + 1, currY + 1, Element.NONE),
+    };
+}
+
+function getPossibleMovesBasedOnBombs(board) {
+    var bombsWithBlasts = [...board.getFutureBlasts(), ...board.getBombs(), ...board.getBlasts()];
+
+    var getIsBlast = (xDelta, yDelta) => {
+        return bombsWithBlasts.indexOf(blast => bomberman.getX() + xDelta === blast.getX() &&  bomberman.getY() + yDelta === blast.getY()) !== -1;
+    }
+
+    return {
+        [Direction.DOWN]: !getIsBlast(0, -1),
+        [Direction.UP]: !getIsBlast(0, 1),
+        [Direction.LEFT]: !getIsBlast(-1, 0),
+        [Direction.RIGHT]: !getIsBlast(1, 0),
+    };
+}
+
+
+function getMove(board) {
+    var moveBarriers = getPossibleMovesBasedOnBarriers(board);
+    var movePredicted = getPossibleMovesBasedOnBarriersPredicted(board);
+    var moveBombs = getPossibleMovesBasedOnBombs(board);
+
+    var moveBarriersAndPredicted = mergePossibleMoves(moveBarriers, movePredicted);
+    var moveBarriersAndPredictedAndBombs = mergePossibleMoves(moveBarriersAndPredicted, moveBombs);
+
+    if (movesAsArray(moveBarriersAndPredictedAndBombs).length) {
+        return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs);
+    }
+
+    if (movesAsArray(moveBarriersAndPredictedAndBombs).length) {
+        return chooseMoveFromArrayOfPossible(moveBarriersAndPredictedAndBombs);
+    }
+
+    if (movesAsArray(moveBarriers).length) {
+        return chooseMoveFromArrayOfPossible(moveBarriers);
+    }
+
+    return '';
+}
